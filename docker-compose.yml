@@ -1,0 +1,113 @@
+version: "3"
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - stream-network
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    networks: 
+        - stream-network
+  streamer:
+    build:
+      context: ./streamingProducer/
+    networks: 
+      - stream-network
+    depends_on:
+      - kafka
+  consumer:
+    build:
+      context: ./streamingConsumer/
+    networks: 
+      - stream-network
+    depends_on:
+      - kafka
+      - postgres  
+  postgres:
+    # image: postgres
+    # restart: always
+    # environment:
+    #   POSTGRES_USER: docker
+    #   POSTGRES_PASSWORD: docker
+    #   POSTGRES_DB: test
+    #   PGDATA: /var/lib/postgresql/data/pgdata
+    # ports:
+    #   - "5432:5432"
+    # healthcheck:
+    #   test: ["CMD-SHELL", "pg_isready -U docker"]
+    # volumes:
+    #   - ./data/postgres/pgdata:/var/lib/postgresql/data/pgdata
+      build: './db'
+      restart: always
+      environment:
+        - "FILLA_DB_USER=filla"
+        - "FILLA_DB_PASSWORD=filla"
+        - "FILLA_DB_DATABASE=filladb1"
+        - "POSTGRES_USER=postgres"
+        - "POSTGRES_PASSWORD=password"
+      ports:
+        - "5432:5432"
+      networks: 
+        - stream-network      
+  # spark-mongo:
+  #   image: mongo
+  #   ports:
+  #     - "27017:27017"
+  #   networks:
+  #     - spark-network
+  #   command: mongod
+  #   volumes:
+  #     - mongodb:/data/db
+  #     - mongodb_config:/data/configdb
+  # spark-master:
+  #   build:
+  #     context: ./spark_master/
+  #   ports:
+  #     - "7077:7077"
+  #     #- "4040:4040"
+  #     - "8080:8080"
+  #   networks:
+  #     - spark-network
+  #   depends_on:
+  #     - spark-mongo
+  # spark-worker-1:
+  #   build:
+  #     context: ./pyspark_worker/
+  #   ports:
+  #     - "8081:8081"
+  #   networks:
+  #     - spark-network
+  #   depends_on:
+  #     - spark-master
+  #     - spark-mongo
+  # spark-worker-2:
+  #   build:
+  #     context: ./pyspark_worker/
+  #   ports:
+  #     - "8082:8081"
+  #   networks:
+  #     - spark-network
+  #   depends_on:
+  #     - spark-master
+  #     - spark-mongo
+networks:
+  stream-network:
+    external:
+      name: stream-network
+volumes:
+  kafka:
+  db:
