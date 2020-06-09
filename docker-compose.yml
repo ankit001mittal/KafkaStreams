@@ -50,6 +50,26 @@ services:
         - "5433:5432"
       networks: 
         - stream-network      
+  spark-master:
+    build:
+      context: ./spark_master/
+    ports:
+      - "7077:7077"
+      - "8080:8080"
+    networks:
+      - stream-network
+    depends_on:
+      - postgres
+  spark-worker-1:
+    build:
+      context: ./pyspark_worker/
+    ports:
+      - "8081:8081"
+    networks:
+      - stream-network
+    depends_on:
+      - spark-master
+      - postgres
 networks:
   stream-network:
     external:
