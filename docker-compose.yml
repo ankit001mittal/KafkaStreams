@@ -14,6 +14,7 @@ services:
       - zookeeper
     ports:
       - 9092:9092
+      - 29092:29092
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
@@ -53,6 +54,8 @@ services:
   spark-master:
     build:
       context: ./spark_master/
+    environment:
+        - INIT_DAEMON_STEP=setup_spark
     ports:
       - "7077:7077"
       - "8080:8080"
@@ -70,6 +73,13 @@ services:
     depends_on:
       - spark-master
       - postgres
+  pyspark-app:
+    build:
+      context: ./pyspark_src/
+    networks:
+      - stream-network
+    depends_on:
+      - spark-master
 networks:
   stream-network:
     external:
