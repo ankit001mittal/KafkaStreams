@@ -34,10 +34,11 @@ ENV SPARK_MASTER_URL "spark://spark-master:7077"
 
 ENV ENABLE_INIT_DAEMON false
 
-ENV SPARK_APPLICATION_PYTHON_LOCATION app/business_rules/jobs/BusinessRule.py
+ENV SPARK_APPLICATION_PYTHON_LOCATION app/business_rules/jobs/Job.py
 
 # on the --packages flag we add spark dependancies that otherwise would be built by sbt
-ENV SPARK_SUBMIT_ARGS="--packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.4.0"
+ENV SPARK_SUBMIT_ARGS="--packages  org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.0"
+#ENV SPARK_SUBMIT_ARGS="--packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.0"
 
 
 CMD ["/bin/bash","/template.sh","/submit.sh"]

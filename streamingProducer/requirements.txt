@@ -2,3 +2,5 @@ confluent_kafka
 kafka-python
 faker
 requests
+pandas
+pyarrow

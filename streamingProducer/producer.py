@@ -3,6 +3,10 @@ import pprint
 from faker import Faker
 #from bson.json_util import dumps
 import time
+import pandas as pd
+import pyarrow
+import json
+
 
 
 def delivery_report(err, msg):
@@ -15,15 +19,18 @@ def delivery_report(err, msg):
 
 
 # Generating fake data
+# myFactory = Faker()
+# myFactory.random.seed(5467)
 
-myFactory = Faker()
-myFactory.random.seed(5467)
+# Reading data from Parquet file
+pdf = pd.read_parquet('parquet_dataset.parquet', engine='pyarrow')
+json_df = json.loads(pdf.to_json(orient='records'))
 
-for i in range(10):
 
-    data = myFactory.name()
-    print("data: ", data)
+for i in json_df:
 
+    # data = myFactory.name()
+    #print(i)
     # Produce sample message from localhost
     # producer = KafkaProducer(bootstrap_servers=['localhost:9092'], retries=5)
     # Produce message from docker
@@ -32,7 +39,7 @@ for i in range(10):
     producer.poll(0)
 
     #producer.send('live-transactions', dumps(data).encode('utf-8'))
-    producer.produce('mytopic', data.encode('utf-8'))
+    producer.produce('mytopic', json.dumps(i, indent=2).encode('utf-8'))
 
     # block until all async messages are sent
 producer.flush()

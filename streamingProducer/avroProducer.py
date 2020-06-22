@@ -46,10 +46,10 @@ def delivery_report(err, msg):
 
 
 avroProducer = AvroProducer({
-    'bootstrap.servers': 'localhost:9092,mybroker2',
+    'bootstrap.servers': 'kafka:29092,localhost:9092',
     'on_delivery': delivery_report,
     'schema.registry.url': 'http://schema_registry_host:port'
     }, default_key_schema=key_schema, default_value_schema=value_schema)
 
-avroProducer.produce(topic='my_topic', value=value, key=key)
+avroProducer.produce(topic='mytopic', value=value, key=key)
 avroProducer.flush()
