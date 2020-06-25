@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession, SQLContext
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
-#import spark.implicits._
+from pyspark.sql.functions import udf, from_json
 
 
 def main():
@@ -20,14 +20,14 @@ def main():
     #consoleOutput.awaitTermination()
     
     transactionJsonDf = inputDf.selectExpr("CAST(value AS STRING)")
-    
+    print("data type: ", transactionJsonDf.dtypes)
 
-    consoleOutput = transactionJsonDf.writeStream.outputMode("append").format("console").start()
-    consoleOutput.awaitTermination()
+    # consoleOutput = transactionJsonDf.writeStream.outputMode("append").format("console").start()
+    # consoleOutput.awaitTermination()
 
     print("type:  ", type(transactionJsonDf))
 
-    schema = StructType(
+    schema_data = StructType(
         [ StructField("payment_id", StringType())
         , StructField("merchant_id", StringType())
         , StructField("profile_id", StringType())
@@ -58,32 +58,32 @@ def main():
         , StructField("payment_state", StringType())
         , StructField("row_hashed", StringType())
         ])
-    # transactionNestedDf = transactionJsonDf.select(from_json(transactionJsonDf["value"], schema))
 
-    #df = df.withColumn("value", from_json(df["value"], jsonSchema))
+    
+    # personNestedDf = personJsonDf.select(from_json($"value", struct).as("person"))
+    transactionNestedDF = transactionJsonDf.select(from_json(transactionJsonDf.value, schema_data).alias("transaction"))
+    transactionFlattenedDf = transactionNestedDF.selectExpr('transaction.payment_id', 'transaction.merchant_id', 'transaction.profile_id', 'transaction.transaction_id', 'transaction.amount_settlement', 'transaction.paid_at', 'transaction.description', 'transaction.redirect_url', 'transaction.consumer_ip', 'transaction.created_at', 'transaction.profile_website', 'transaction.profile_merchant_category_code', 'transaction.amount_original', 'transaction.currency_original', 'transaction.currency_settlement', 'transaction.country_code_based_on_consumer_ip', 'transaction.consumer_account', 'transaction.consumer_name', 'transaction.card_fingerprint', 'transaction.card_issue_country', 'transaction.paypal_status', 'transaction.consumer_bic', 'transaction.card_issue_organization', 'transaction.consumer_account_country', 'transaction.consumer_email_hashed', 'transaction.paypal_id_hashed', 'transaction.payment_type', 'transaction.payment_state', 'transaction.row_hashed')
 
-    # personFlattenedDf = transactionNestedDf.selectExpr('transaction.payment_id', 'transaction.merchant_id', 'transaction.profile_id', 'transaction.transaction_id',
-    #    'transaction.amount_settlement', 'transaction.paid_at', 'transaction.description', 'transaction.redirect_url',
-    #    'transaction.consumer_ip', 'transaction.created_at', 'transaction.profile_website',
-    #    'transaction.profile_merchant_category_code', 'transaction.amount_original',
-    #    'transaction.currency_original', 'transaction.currency_settlement',
-    #    'transaction.country_code_based_on_consumer_ip', 'transaction.consumer_account',
-    #    'transaction.consumer_name', 'transaction.card_fingerprint', 'transaction.card_issue_country',
-    #    'transaction.paypal_status', 'transaction.consumer_bic', 'transaction.card_issue_organization',
-    #    'transaction.consumer_account_country', 'transaction.consumer_email_hashed', 'transaction.paypal_id_hashed',
-    #    'transaction.payment_type', 'transaction.payment_state', 'transaction.row_hashed')
-
-    # print("Types of : ", type(transactionNestedDf))
+    transactionFlattenedDf.printSchema()
 
 
+    # # How many transactions amount are above a certain amount?
+    threshold = 5000
+    filtered_amount_above_threshold = transactionFlattenedDf \
+        .select("*") \
+        .filter(
+            transactionFlattenedDf['amount_settlement'] > threshold
+        )
+    
 
+    print('The filtered amount above the threshold is: \n')
 
+    filtered_count = filtered_amount_above_threshold.count()
+    print('\nThe number of records above threshold amount ',
+          threshold, 'is: ', filtered_count, '\n')
 
-
-
-
-
-if __name__ == '__main__':
+ 
+if __name__ == '__main__': 
     # There is a bug that doesnt pass spark session objects when called from another func
     spark_session = SparkSession.builder \
         .appName("Spark-Kafka") \
