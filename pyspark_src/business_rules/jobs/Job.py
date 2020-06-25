@@ -22,9 +22,6 @@ def main():
     transactionJsonDf = inputDf.selectExpr("CAST(value AS STRING)")
     print("data type: ", transactionJsonDf.dtypes)
 
-    # consoleOutput = transactionJsonDf.writeStream.outputMode("append").format("console").start()
-    # consoleOutput.awaitTermination()
-
     print("type:  ", type(transactionJsonDf))
 
     schema_data = StructType(
@@ -75,14 +72,12 @@ def main():
             transactionFlattenedDf['amount_settlement'] > threshold
         )
     
+    resDf = filtered_amount_above_threshold.select(filtered_amount_above_threshold.payment_id.alias("key"),filtered_amount_above_threshold.amount_settlement.cast("string").alias("value"))
 
-    print('The filtered amount above the threshold is: \n')
+    kafkaOutput = resDf.writeStream.format("kafka").option("kafka.bootstrap.servers", "kafka:29092").option("topic", "alerts").option("checkpointLocation", "/Users/ankitmittal/Desktop/Slimmer AI Project/KafkaStreams").start()
 
-    filtered_count = filtered_amount_above_threshold.count()
-    print('\nThe number of records above threshold amount ',
-          threshold, 'is: ', filtered_count, '\n')
+    kafkaOutput.awaitTermination()
 
- 
 if __name__ == '__main__': 
     # There is a bug that doesnt pass spark session objects when called from another func
     spark_session = SparkSession.builder \
